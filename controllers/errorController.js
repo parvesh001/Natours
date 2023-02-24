@@ -1,6 +1,5 @@
 const AppError = require('../utils/appError');
 
-
 //Function for processing database errors:CasteError,DuplicateKey Error, and ValidationError
 const handleCasteError = (err) => {
   const message = `Invalid ${err.path} value:${err.value}`;
@@ -8,20 +7,29 @@ const handleCasteError = (err) => {
 };
 
 const handleDuplicateKeyError = (err) => {
-  const message = `${Object.keys(
-    err.keyPattern
-  )} already exist`;
+  const message = `${Object.keys(err.keyPattern)} already exist`;
   return new AppError(message, 400);
 };
 
 const handleValidationError = (err) => {
-   const value = Object.values(err.errors).map(val => {
-    return val.name === 'CastError'? `Incorrect value "${val.value}" for ${val.path}` : val.message
-   }).join('. ')
+  const value = Object.values(err.errors)
+    .map((val) => {
+      return val.name === 'CastError'
+        ? `Incorrect value "${val.value}" for ${val.path}`
+        : val.message;
+    })
+    .join('. ');
 
-   const message = `Invalid Input:${value}`
-   return new AppError(message,400)
+  const message = `Invalid Input:${value}`;
+  return new AppError(message, 400);
 };
+
+const handleTokenExpiredError = () => {
+  return new AppError('Token is expired, please login again', 401);
+};
+const handleJsonWebTokenError = ()=>{
+  return new AppError("Invalid token, please login again",401)
+}
 
 //Function for handling errors:Development mode
 const devModeError = (err, res) => {
@@ -57,10 +65,13 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     devModeError(err, res);
   } else if (process.env.NODE_ENV === 'production') {
-    let error = { ...err };
+    let error = { ...err, message:err.message };
+   
     if (err.name === 'CastError') error = handleCasteError(error);
     if (err.code === 11000) error = handleDuplicateKeyError(error);
     if (err.name === 'ValidationError') error = handleValidationError(error);
+    if (err.name === 'TokenExpiredError') error = handleTokenExpiredError();
+    if (err.name === 'JsonWebTokenError') error = handleJsonWebTokenError();
     prodModeError(error, res);
   }
 };
