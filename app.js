@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const tourRoutes = require('./routes/tourRoutes');
 const userRoutes = require('./routes/userRoutes');
 
-//Required Controllers
+//Required Controller
 const globalErrorHandler = require('./controllers/errorController');
 
 //Required Utils
@@ -14,7 +14,7 @@ const AppError = require('./utils/appError');
 
 const app = express();
 
-//MIDDLEWARES:runs on each request
+//MIDDLEWARES:run on each request
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
@@ -24,10 +24,12 @@ app.use(express.json());
 app.use('/api/v1/tours', tourRoutes);
 app.use('/api/v1/users', userRoutes);
 
+//404 response:When no route match
 app.all('*', (req, res, next) => {
   next(new AppError(`can't find ${req.originalUrl} route!`, 404));
 });
 
+//Global error handler:All errors come at this central place
 app.use(globalErrorHandler);
 
 module.exports = app;

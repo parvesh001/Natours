@@ -12,9 +12,12 @@ const signToken = (id) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-  // const { name, email, password, passwordConfirm, role } = req.body;
+  //Validation logic is running in model,here we only need to focus on response
+  //Create User
   const newUser = await User.create(req.body);
+  //generate JWT 
   const token = signToken(newUser._id);
+  //Send back response with token
   res.status(201).json({ status: 'success', token, data: { user: newUser } });
 });
 
@@ -142,3 +145,25 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   const token = signToken(user._id);
   res.status(200).json({ status: 'success', token });
 });
+
+
+exports.updateMyPassword = catchAsync(async(req,res,next)=>{
+  const {oldPassword, newPassword, newPasswordConfirm} = req.body
+
+  //1)Get user from database with password
+  const user = await User.findById(req.user._id).select('+password')
+
+  //2) Check if oldPassword is correct
+  const isEqual = await user.isComparable(oldPassword, user.password)
+  if(!isEqual)return next(new AppError('password is incorrect',401))
+
+  //3)Update the password and time at which password updated
+  user.password = newPassword
+  user.passwordConfirm = newPasswordConfirm
+  user.passwordChangedAt = Date.now() - 1000
+  await user.save()
+
+  //4)Send back response with token
+  const token = signToken(user._id)
+  res.status(200).json({status:'success', token})
+})

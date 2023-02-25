@@ -43,9 +43,15 @@ const userSchema = new mongoose.Schema({
   },
   passwordChangedAt:Date,
   passwordResetToken:String,
-  passwordResetExpiresIn:Date
+  passwordResetExpiresIn:Date,
+  active:{
+    type:Boolean,
+    default:true,
+    select:false
+  }
 });
 
+//Document Middleware:runs before saving document
 userSchema.pre('save', async function (next) {
   //run further only if password filed is modified
   if (!this.isModified('password')) return next();
@@ -58,6 +64,14 @@ userSchema.pre('save', async function (next) {
     return next(err);
   }
 });
+
+//Query Middleware:runs before defined query
+userSchema.pre(/^find/,function(next){
+  //filter out active users only
+  //as it is qury middleware 'this' refers to query
+  this.find({active:true})
+  next()
+})
 
 userSchema.methods.isComparable = async function (inputPass, encryptedPass) {
   return await bcrypt.compare(inputPass, encryptedPass);
