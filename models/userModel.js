@@ -76,7 +76,7 @@ userSchema.methods.generateResetPasswordToken = async function(){
   const hashedResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
 
   this.passwordResetToken = hashedResetToken
-  this.passwordResetExpiresIn = Date.now() + 10 * 60 
+  this.passwordResetExpiresIn = Date.now() + 10 * 60 * 1000
   await this.save({validateBeforeSave:false})
   return resetToken
 }

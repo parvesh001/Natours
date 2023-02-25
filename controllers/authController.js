@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -74,15 +75,15 @@ exports.restrictTo = (...roles) => {
 };
 
 exports.forgetPassword = catchAsync(async (req, res, next) => {
-  //1) Check if email exist
+  //1) Check if email exist, then user exist with email
+  if (!req.body.email)
+    return next(new AppError('Please provide a valid email', 400));
   const user = await User.findOne({ email: req.body.email });
-  if (!user) {
-    return next(new AppError('User with this email not found', 404));
-  }
+  if (!user) return next(new AppError('User with this email not found', 404));
 
   //2)Create token to send in email and store in database
   const forgetPasswordToken = await user.generateResetPasswordToken();
-  console.log(forgetPasswordToken)
+  console.log(forgetPasswordToken);
   //3) Send email with link contian token
   try {
     const url = `${req.protocol}://${req.get(
@@ -113,4 +114,31 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
   }
 });
 
-exports.resetPassword = () => {};
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  //1) Extract the token and hash it
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+
+    //2) Check if token is valid and user exists with the token
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpiresIn: { $gt: Date.now() },
+  });
+  if (!user) {
+    return next(new AppError('User do not exist or token is invalid', 400));
+  }
+
+  //3) Change the password, set change password time,and erase reset token and expiresIn time
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpiresIn = undefined;
+  user.passwordChangedAt = Date.now() - 1000;
+  await user.save();
+
+  //4) Send a response with login token
+  const token = signToken(user._id);
+  res.status(200).json({ status: 'success', token });
+});
