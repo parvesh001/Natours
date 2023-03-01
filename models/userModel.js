@@ -48,7 +48,9 @@ const userSchema = new mongoose.Schema({
     type:Boolean,
     default:true,
     select:false
-  }
+  },
+  loginAttempts:Number,
+  loginProhibitionTime:Date
 });
 
 //Document Middleware:runs before saving document

@@ -11,30 +11,61 @@ const signToken = (id) => {
   });
 };
 
+const createSendToken = (res,user,statusCode)=>{
+  const token = signToken(user._id);
+  user.password = undefined;
+  const cookieOptions = {
+    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRESIN * 24 * 60 * 60 * 1000),
+    httpOnly:true,
+  }
+  if(process.env.NODE_ENV==='production') cookieOptions.secure = true
+  res.cookie('jwt',token, cookieOptions)
+  res.status(statusCode).json({ status: 'success', token, data: {user} });
+}
+
 exports.signup = catchAsync(async (req, res, next) => {
   //Validation logic is running in model,here we only need to focus on response
   //Create User
   const newUser = await User.create(req.body);
-  //generate JWT 
-  const token = signToken(newUser._id);
-  //Send back response with token
-  res.status(201).json({ status: 'success', token, data: { user: newUser } });
+  //generate JWT and send back with response
+ createSendToken(res,newUser,201)
 });
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
-  //check if email and password are defined
+  //1)check if email and password are defined
   if (!email || !password) {
     return next(new AppError('provide email and password', 400));
   }
-  //check if email and password are correct
+  //2)Check if email is correct
   const user = await User.findOne({ email }).select('+password');
-  if (!user || !(await user.isComparable(password, user.password))) {
+  if (!user) return next(new AppError('incorrect email or password', 401));
+
+  //3)Check if there is any loginProhibition
+  if (user.loginProhibitionTime && user.loginProhibitionTime > Date.now()) {
+    return next(new AppError('You have exceeded login attemts limit, please try again after some time', 403));
+  }
+
+  //4)Check if the password matches, if not count the attempts and if they reach 3 set prohibition time 
+  if (!(await user.isComparable(password, user.password))) {
+    const loginAttemts = user.loginAttempts || 0;
+    await User.findByIdAndUpdate(user._id, { loginAttempts: loginAttemts + 1});
+    const updatedUser = await User.findById(user._id)
+    if (updatedUser.loginAttempts === 3) {
+      await User.findByIdAndUpdate(updatedUser._id, {loginProhibitionTime:Date.now() + 200000, $unset: { loginAttempts: 1 }})
+      return next(
+        new AppError(
+          'You have exceeded login attempts limit, please try again after 30 minutes',
+          400
+        )
+      );
+    }
     return next(new AppError('incorrect email or password', 401));
   }
-  // send back response with jwt token
-  const token = signToken(user._id);
-  res.status(200).json({ status: 'success', token });
+  //5)If all good, unset attempts and loginprohibition time and send back token
+  await User.findByIdAndUpdate(user._id, {$unset: { loginAttempts: 1 , loginProhibitionTime:1}})
+  const updatedUser = await User.findById(user._id)
+  createSendToken(res,updatedUser,200)
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -124,7 +155,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     .update(req.params.token)
     .digest('hex');
 
-    //2) Check if token is valid and user exists with the token
+  //2) Check if token is valid and user exists with the token
   const user = await User.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpiresIn: { $gt: Date.now() },
@@ -142,28 +173,25 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   //4) Send a response with login token
-  const token = signToken(user._id);
-  res.status(200).json({ status: 'success', token });
+  createSendToken(res,user,200)
 });
 
-
-exports.updateMyPassword = catchAsync(async(req,res,next)=>{
-  const {oldPassword, newPassword, newPasswordConfirm} = req.body
+exports.updateMyPassword = catchAsync(async (req, res, next) => {
+  const { oldPassword, newPassword, newPasswordConfirm } = req.body;
 
   //1)Get user from database with password
-  const user = await User.findById(req.user._id).select('+password')
+  const user = await User.findById(req.user._id).select('+password');
 
   //2) Check if oldPassword is correct
-  const isEqual = await user.isComparable(oldPassword, user.password)
-  if(!isEqual)return next(new AppError('password is incorrect',401))
+  const isEqual = await user.isComparable(oldPassword, user.password);
+  if (!isEqual) return next(new AppError('password is incorrect', 401));
 
   //3)Update the password and time at which password updated
-  user.password = newPassword
-  user.passwordConfirm = newPasswordConfirm
-  user.passwordChangedAt = Date.now() - 1000
-  await user.save()
+  user.password = newPassword;
+  user.passwordConfirm = newPasswordConfirm;
+  user.passwordChangedAt = Date.now() - 1000;
+  await user.save();
 
   //4)Send back response with token
-  const token = signToken(user._id)
-  res.status(200).json({status:'success', token})
-})
+ createSendToken(res,user,200)
+});
