@@ -7,20 +7,17 @@ const mongoSanitize = require('express-mongo-sanitize')
 const xss = require('xss-clean')
 const hpp = require('hpp')
 
-//Required Routes
-const tourRoutes = require('./routes/tourRoutes');
-const userRoutes = require('./routes/userRoutes');
-
-//Required Controller
 const globalErrorHandler = require('./controllers/errorController');
-
-//Required Utils
 const AppError = require('./utils/appError');
+
+//Required Routes
+const tourRouter = require('./routes/tourRoutes');
+const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes')
 
 const app = express();
 
 //GLOBAL MIDDLEWARES:run on each request
-
 //Set security http headers
 app.use(helmet())
 
@@ -58,8 +55,9 @@ app.use(hpp({
 }))
 
 //ROUTES
-app.use('/api/v1/tours', tourRoutes);
-app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter )
 
 //404 response:When no route match
 app.all('*', (req, res, next) => {

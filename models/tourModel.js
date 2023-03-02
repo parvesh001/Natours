@@ -74,9 +74,17 @@ const tourSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+//Add virtual Field
 tourSchema.virtual('tourWeeks').get(function () {
   return (this.duration / 7).toFixed(1);
 });
+
+//Add Virtual field and Populate
+tourSchema.virtual('reviews', {
+  ref:'Review',
+  foreignField:'tour',
+  localField:'_id'
+})
 
 //DOCUMENT MIDDLERWARE:runs before or after the .save() and .create()
 tourSchema.pre('save', function (next) {
@@ -94,6 +102,7 @@ tourSchema.pre(/^find/, function(next){
   this.populate({path:'guides', select:'-__v -passwordChangedAt'})
   next()
 })
+
 //AGGREGATE MIDDLEWARE
 tourSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
