@@ -11,6 +11,11 @@ const filterObj = (obj, ...allowedFields) => {
   return filteredObj;
 };
 
+exports.getMe = (req,res,next)=>{
+  req.params.id = req.user._id
+  next()
+}
+
 exports.updateMe = catchAsync(async (req, res, next) => {
   //1) Check if password and confirm password are there
   if (req.body.newPassword || req.body.newPasswordConfirm) {
@@ -37,11 +42,6 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
   await User.findByIdAndUpdate(req.user._id, { active: false });
   res.status(204).json({ status: 'success', data: null });
 });
-
-exports.getMe = (req,res,next)=>{
-  req.params.id = req.user._id
-  next()
-}
 
 //donot use this route to create user go to :/signup
 exports.createUser = (req, res) => {

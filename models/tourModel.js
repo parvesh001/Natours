@@ -74,6 +74,10 @@ const tourSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+//SET INDEXES
+tourSchema.index({price:1, ratingsAverage:-1})
+
+//VIRTUALS
 //Add virtual Field
 tourSchema.virtual('tourWeeks').get(function () {
   return (this.duration / 7).toFixed(1);
@@ -86,6 +90,7 @@ tourSchema.virtual('reviews', {
   localField:'_id'
 })
 
+//MIDDLEWARES
 //DOCUMENT MIDDLERWARE:runs before or after the .save() and .create()
 tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });

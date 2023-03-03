@@ -57,7 +57,7 @@ exports.getAll = (Model)=>{
           .pagination();
       
         //Finally Getting Docs
-        const docsArray = await apiFeatures.query;
+        const docsArray = await apiFeatures.query.explain();
         res
           .status(200)
           .json({ status: 'success', result: docsArray.length, data: { data:docsArray } });

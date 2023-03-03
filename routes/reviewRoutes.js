@@ -3,7 +3,7 @@ const router = require('express').Router({ mergeParams: true }); //merge params 
 const reviewController = require('../controllers/reviewController');
 const authController = require('../controllers/authController');
 
-//All the beneath requests have to pass this middleware
+//All requests have to pass this middleware
 router.use(authController.protect)
 
 //POST:domain/api/v1/tours/12fr221/reviews

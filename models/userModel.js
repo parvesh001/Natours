@@ -20,8 +20,8 @@ const userSchema = new mongoose.Schema({
   },
   role:{
     type:String,
-    enum:['user', 'admin', 'lead-guide', 'guide'],
-    default:'user'
+    enum:['user', 'admin', 'lead-guide', 'guide', 'executive', 'ceo', 'other', 'random'],
+    default:'user' 
   },
   photo: String,
   password: {
@@ -53,7 +53,11 @@ const userSchema = new mongoose.Schema({
   loginProhibitionTime:Date
 });
 
-//Document Middleware:runs before saving document
+//SET INDEX
+userSchema.index({role:1})
+
+//MIDDLEWARES
+// Document Middleware:runs before saving document
 userSchema.pre('save', async function (next) {
   //run further only if password filed is modified
   if (!this.isModified('password')) return next();
@@ -67,7 +71,7 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-//Query Middleware:runs before defined query
+// Query Middleware:runs before defined query
 userSchema.pre(/^find/,function(next){
   //filter out active users only
   //as it is qury middleware 'this' refers to query
@@ -75,6 +79,7 @@ userSchema.pre(/^find/,function(next){
   next()
 })
 
+//Schema Methods
 userSchema.methods.isComparable = async function (inputPass, encryptedPass) {
   return await bcrypt.compare(inputPass, encryptedPass);
 };
