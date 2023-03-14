@@ -11,24 +11,26 @@ const signToken = (id) => {
   });
 };
 
-const createSendToken = (res,user,statusCode)=>{
+const createSendToken = (res, user, statusCode) => {
   const token = signToken(user._id);
   user.password = undefined;
   const cookieOptions = {
-    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRESIN * 24 * 60 * 60 * 1000),
-    httpOnly:true,
-  }
-  if(process.env.NODE_ENV==='production') cookieOptions.secure = true
-  res.cookie('jwt',token, cookieOptions)
-  res.status(statusCode).json({ status: 'success', token, data: {user} });
-}
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRESIN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+  res.cookie('jwt', token, cookieOptions);
+  res.status(statusCode).json({ status: 'success', token, data: { user } });
+};
 
 exports.signup = catchAsync(async (req, res, next) => {
   //Validation logic is running in model,here we only need to focus on response
   //Create User
   const newUser = await User.create(req.body);
   //generate JWT and send back with response
- createSendToken(res,newUser,201)
+  createSendToken(res, newUser, 201);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -43,16 +45,24 @@ exports.login = catchAsync(async (req, res, next) => {
 
   //3)Check if there is any loginProhibition
   if (user.loginProhibitionTime && user.loginProhibitionTime > Date.now()) {
-    return next(new AppError('You have exceeded login attemts limit, please try again after some time', 403));
+    return next(
+      new AppError(
+        'You have exceeded login attemts limit, please try again after some time',
+        403
+      )
+    );
   }
 
-  //4)Check if the password matches, if not count the attempts and if they reach 3 set prohibition time 
+  //4)Check if the password matches, if not count the attempts and if they reach 3 set prohibition time
   if (!(await user.isComparable(password, user.password))) {
     const loginAttemts = user.loginAttempts || 0;
-    await User.findByIdAndUpdate(user._id, { loginAttempts: loginAttemts + 1});
-    const updatedUser = await User.findById(user._id)
+    await User.findByIdAndUpdate(user._id, { loginAttempts: loginAttemts + 1 });
+    const updatedUser = await User.findById(user._id);
     if (updatedUser.loginAttempts === 3) {
-      await User.findByIdAndUpdate(updatedUser._id, {loginProhibitionTime:Date.now() + 200000, $unset: { loginAttempts: 1 }})
+      await User.findByIdAndUpdate(updatedUser._id, {
+        loginProhibitionTime: Date.now() + 200000,
+        $unset: { loginAttempts: 1 },
+      });
       return next(
         new AppError(
           'You have exceeded login attempts limit, please try again after 30 minutes',
@@ -63,9 +73,11 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('incorrect email or password', 401));
   }
   //5)If all good, unset attempts and loginprohibition time and send back token
-  await User.findByIdAndUpdate(user._id, {$unset: { loginAttempts: 1 , loginProhibitionTime:1}})
-  const updatedUser = await User.findById(user._id)
-  createSendToken(res,updatedUser,200)
+  await User.findByIdAndUpdate(user._id, {
+    $unset: { loginAttempts: 1, loginProhibitionTime: 1 },
+  });
+  const updatedUser = await User.findById(user._id);
+  createSendToken(res, updatedUser, 200);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -117,7 +129,7 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
 
   //2)Create token to send in email and store in database
   const forgetPasswordToken = await user.generateResetPasswordToken();
-  console.log(forgetPasswordToken);
+
   //3) Send email with link contian token
   try {
     const url = `${req.protocol}://${req.get(
@@ -173,7 +185,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   //4) Send a response with login token
-  createSendToken(res,user,200)
+  createSendToken(res, user, 200);
 });
 
 exports.updateMyPassword = catchAsync(async (req, res, next) => {
@@ -193,5 +205,6 @@ exports.updateMyPassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   //4)Send back response with token
- createSendToken(res,user,200)
+  createSendToken(res, user, 200);
 });
+

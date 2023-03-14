@@ -29,6 +29,9 @@ const reviewSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
+//Compound Index:This also makes sure compound index combination is unique
+reviewSchema.index({tour:1, user:1}, {unique:true})
+
 //STATIC METHOD:To caluculate the ratingsAvg of concerned tour
 reviewSchema.statics.caluculateAvgRatings = async function (tourId) {
   //here this key refers to model/schema not document

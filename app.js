@@ -1,3 +1,5 @@
+const path = require('path')
+
 //Required Packages
 const express = require('express');
 const morgan = require('morgan');
@@ -5,7 +7,10 @@ const rateLimit = require('express-rate-limit')
 const helmet = require('helmet')
 const mongoSanitize = require('express-mongo-sanitize')
 const xss = require('xss-clean')
-const hpp = require('hpp')
+const hpp = require('hpp');
+const cors = require('cors')
+const cookieParser = require('cookie-parser')
+// const csrf = require('csurf')
 
 const globalErrorHandler = require('./controllers/errorController');
 const AppError = require('./utils/appError');
@@ -16,22 +21,36 @@ const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes')
 
 const app = express();
+// const csrfProtection = csrf({ cookie: true });
+
 
 //GLOBAL MIDDLEWARES:run on each request
-//Set security http headers
-app.use(helmet())
-
 //Log requests during development mode
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+//Cors headers
+app.use(cors())
+
+// // add the csrf middleware
+// app.use(csrfProtection);
+
 //Parse incoming json data
 app.use(express.json());
 
+//Parse cookie
+app.use(cookieParser())
+
+// Serve static files from the "public" directory
+app.use(express.static(path.join(`${__dirname}`, 'public')));
+
+//Set security http headers
+app.use(helmet())
+
 //Limit incoming requests in between an hour
 const limiter = rateLimit({
-  max:100,
+  max:1000000000,
   windowMs:60 * 60 * 1000,
   message:'To many request from this IP, please try again after an hour'
 })
