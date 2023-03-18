@@ -30,7 +30,7 @@ router
   .get(tourController.getAllTours)
   .post(
     authController.protect,
-    authController.restrictTo('admin', 'lead-guide'),
+    authController.restrictTo('admin'),
     tourController.createTour
   );
 
@@ -38,12 +38,14 @@ router
   .route('/:id')
   .patch(
     authController.protect,
-    authController.restrictTo('admin', 'lead-guide'),
+    authController.restrictTo('admin'),
+    tourController.uploadTourPhotos,
+    tourController.processTourPhotos,
     tourController.updateTour
   )
   .delete(
     authController.protect,
-    authController.restrictTo('admin', 'lead-guide'),
+    authController.restrictTo('admin'),
     tourController.deleteTour
   );
 

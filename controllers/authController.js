@@ -128,13 +128,12 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
   if (!user) return next(new AppError('User with this email not found', 404));
 
   //2)Create token to send in email and store in database
-  const forgetPasswordToken = await user.generateResetPasswordToken();
+  const resetPasswordToken = await user.generateResetPasswordToken();
 
   //3) Send email with link contian token
   try {
-    const url = `${req.protocol}://${req.get(
-      'host'
-    )}/api/v1/resetPassword/${forgetPasswordToken}`;
+    //http://localhost:3000/password-reset/:reset-token
+    const url = `${process.env.FRONT_END_DOMAIN}/password-reset/${resetPasswordToken}`
     const subject = 'Reset Password Link(you only have 10 minutes)';
     const html = `<div>
                         <p>Requested for password resitting? here is link</p>
@@ -142,7 +141,6 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
                   </div>
                    `;
     await sendEmail({
-      from: 'vparvesh830@gmail.com',
       email: user.email,
       subject,
       html,
@@ -207,4 +205,3 @@ exports.updateMyPassword = catchAsync(async (req, res, next) => {
   //4)Send back response with token
   createSendToken(res, user, 200);
 });
-

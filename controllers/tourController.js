@@ -1,7 +1,51 @@
+const multer = require('multer');
+const sharp = require('sharp');
+
 const Tour = require('../models/tourModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('../controllers/handlerFactory');
+
+const multerStorage = multer.memoryStorage();
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) return cb(null, true);
+  cb(new AppError('The file is not an image file', 400), false);
+};
+
+exports.uploadTourPhotos = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+}).fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+exports.processTourPhotos = catchAsync(async (req, res, next) => {
+  if (!req.files.imageCover || !req.files.images) return next();
+
+  //1) process imageCover
+  req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`public/img/tours/${req.body.imageCover}`);
+
+  //process images
+  req.body.images = [];
+  await Promise.all(
+    req.files.images.map(async (image, index) => {
+      const filename = `tour-${req.params.id}-${Date.now()}-${index + 1}.jpeg`;
+      await sharp(image.buffer)
+        .resize(2000, 1333)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`public/img/tours/${filename}`);
+      req.body.images.push(filename);
+    })
+  );
+  next();
+});
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = '5';
@@ -16,7 +60,10 @@ exports.deleteTour = factory.deleteOne(Tour);
 
 exports.getTour = catchAsync(async (req, res, next) => {
   const slug = req.params.slug;
-  const tour = await Tour.findOne({ slug }).populate({path:'reviews', select:'review rating user -tour'});
+  const tour = await Tour.findOne({ slug }).populate({
+    path: 'reviews',
+    select: 'review rating user -tour',
+  });
   if (!tour) {
     return next(new AppError('No Tour Found With This Name', 404));
   }

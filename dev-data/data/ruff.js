@@ -1,41 +1,12 @@
-// const fs = require('fs')
-const path = require('path')
-console.log(path.join(__dirname,"..", "..","public"))
+const anFn = async () => {
+  const arr = [1, 2, 3, 4];
 
-// const readFile = (fp, cb) => {
-//    fs.readFile(fp, (err, data) => {
-//     if (err) {
-//       cb(err, null);
-//     } else {
-//       cb(null, data);
-//     }
-//   });
-// };
+  const p = Promise.all(arr.map(async (el) => {
+      return new Promise((res) => res(console.log('resolved')));
+    }))
+ 
+  console.log(p.then(()=>console.log('resolved')))
+  console.log('bottom');
+};
+anFn();
 
-// readFile(`${__dirname}/reviews.json`, (err, data)=>{
-//   if(err){
-//     console.log("ERROR!!:" +err)
-//   }else{
-//     console.log("This is Data=>: " + data)
-//   }
-// })
-
-// class Animal{
-//   constructor(petName,breed){
-//     this.petName = petName
-//     this.breed = breed
-//   }
-// }
-
-// class Dog extends Animal{
-//   constructor(name, age){
-//     super(name, '')
-//     this.age = age
-//   }
-// }
-
-// console.log(new Dog('rocky', '13'))
-
-// const obj1 = {email:'1',name:'2',person:'3'}
-
-// console.log(`${Object.keys(obj1)} already exists`)

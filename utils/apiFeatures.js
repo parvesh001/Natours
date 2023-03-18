@@ -9,7 +9,7 @@ class APIFeatures {
     const queryObj = { ...this.queryObj };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
-
+    
     //construct query in the way mongoose understand
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
@@ -18,6 +18,13 @@ class APIFeatures {
     this.query = this.query.find(JSON.parse(queryStr));
     return this;
   }
+
+  // User.find({
+  //   $or: [
+  //     { role: 'guide' },
+  //     { role: 'lead-guide' },
+  //   ]
+  // })
 
   sort() {
     if (this.queryObj.sort) {

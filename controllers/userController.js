@@ -45,12 +45,12 @@ exports.uploadUserPhoto = multer({
   fileFilter: multerFilter,
 }).single('photo');
 
-exports.processUserPhoto = (req, res, next) => {
+exports.processUserPhoto = catchAsync(async(req, res, next) => {
   if (!req.file) return next();
 
   req.file.filename = `user-${req.user._id}-${Date.now()}.jpeg`;
 
-  sharp(req.file.buffer)
+  await sharp(req.file.buffer)
     .resize(500, 500, {
       fit: 'cover',
       position: 'center',
@@ -60,7 +60,7 @@ exports.processUserPhoto = (req, res, next) => {
     .toFile(`public/img/users/${req.file.filename}`);
 
   next();
-};
+});
 
 exports.updateMe = catchAsync(async (req, res, next) => {
   //1) Check if password and confirm password are there
@@ -78,7 +78,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   //3)Check if their is image file, if yes attach to obj and delete existing file if it is !== default.jpg
   if (req.file) {
     filteredObj.photo = req.file.filename;
-    
+
     if (req.user.photo !== 'default.jpg') {
       const filePath = path.join('/public', 'img', 'users', req.user.photo);
       deleteFile(filePath, (err) => {
@@ -86,7 +86,6 @@ exports.updateMe = catchAsync(async (req, res, next) => {
       });
     }
   }
-
   //4)Update email or name or file (using findByIdAndUpdate to avoid extra validations which require fields)
   const updatedUser = await User.findByIdAndUpdate(req.user._id, filteredObj, {
     new: true,
