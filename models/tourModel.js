@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
+
 const tourSchema = new mongoose.Schema(
   {
     name: {
@@ -60,7 +61,8 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       validate: {
         validator: function (val) {
-          return val < this.price;
+          if(this.price) return val < this.price;
+          return val <  this._update['$set'].price
         },
         message: `The discount ({VALUE}) must be less than actual price`,
       },
@@ -82,10 +84,7 @@ const tourSchema = new mongoose.Schema(
       trim: true,
       required: [true, 'A tour must have summary'],
     },
-    imageCover: {
-      type: String,
-      required: [true, 'A tour must have image cover'],
-    },
+    imageCover: String,
     images: [String],
     startDates: [Date],
     guides: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
