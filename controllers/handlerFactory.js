@@ -1,6 +1,8 @@
+const path = require('path');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const APIFeatures = require('../utils/apiFeatures')
+const APIFeatures = require('../utils/apiFeatures');
+const deleteFile = require('../utils/file');
 
 exports.deleteOne = (Model) => {
   return catchAsync(async (req, res, next) => {
@@ -12,6 +14,41 @@ exports.deleteOne = (Model) => {
 
 exports.updateOne = (Model) => {
   return catchAsync(async (req, res, next) => {
+    //query the being updated document
+    const beingUpdatedDoc = await Model.findById(req.params.id);
+
+    //check for any file and delete them
+    if (beingUpdatedDoc.imageCover) {
+      const filePath = path.join(
+        '/public',
+        'img',
+        'tours',
+        beingUpdatedDoc.imageCover
+      );
+      deleteFile(filePath, (err) => {
+        if (err) return next(new AppError('internal server problem', 500));
+      });
+    }
+    if (beingUpdatedDoc.images) {
+      beingUpdatedDoc.images.forEach((image) => {
+        const filePath = path.join('/public', 'img', 'tours', image);
+        deleteFile(filePath, (err) => {
+          if (err) return next(new AppError('internal server problem', 500));
+        });
+      });
+    }
+    if (beingUpdatedDoc.photo) {
+      const filePath = path.join(
+        '/public',
+        'img',
+        'users',
+        beingUpdatedDoc.photo
+      );
+      deleteFile(filePath, (err) => {
+        if (err) return next(new AppError('internal server problem', 500));
+      });
+    }
+
     const doc = await Model.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
       new: true,
@@ -42,22 +79,24 @@ exports.getOne = (Model) => {
   });
 };
 
-exports.getAll = (Model)=>{
-    return catchAsync(async (req, res, next) => {
-        //a small hack for tour/review
-        let filter = {}
-        if(req.params.tourId) filter = {tour:req.params.tourId}
+exports.getAll = (Model) => {
+  return catchAsync(async (req, res, next) => {
+    //a small hack for tour/review
+    let filter = {};
+    if (req.params.tourId) filter = { tour: req.params.tourId };
 
-        const apiFeatures = new APIFeatures(Model.find(filter), req.query)
-          .filter()
-          .sort()
-          .limitFields()
-          .pagination()
-          
-        //Finally Getting Docs
-        const docsArray = await apiFeatures.query
-        res
-          .status(200)
-          .json({ status: 'success', result: docsArray.length, data: { data:docsArray } });
-      });
-}
+    const apiFeatures = new APIFeatures(Model.find(filter), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .pagination();
+
+    //Finally Getting Docs
+    const docsArray = await apiFeatures.query;
+    res.status(200).json({
+      status: 'success',
+      result: docsArray.length,
+      data: { data: docsArray },
+    });
+  });
+};
