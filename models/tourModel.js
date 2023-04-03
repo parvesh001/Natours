@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
-
 const tourSchema = new mongoose.Schema(
   {
     name: {
@@ -61,8 +60,9 @@ const tourSchema = new mongoose.Schema(
       type: Number,
       validate: {
         validator: function (val) {
-          if(this.price) return val < this.price;
-          return val <  this._update['$set'].price
+          if (this.price !== undefined)
+            return this.price > 0 ? val < this.price : val === this.price;
+          return val < this._update['$set'].price;
         },
         message: `The discount ({VALUE}) must be less than actual price`,
       },
@@ -101,9 +101,9 @@ const tourSchema = new mongoose.Schema(
 //setting compound index
 tourSchema.index({ price: 1, ratingsAverage: -1 });
 //setting single index
-tourSchema.index({slug:1})
+tourSchema.index({ slug: 1 });
 //setting geo index
-tourSchema.index({startLocation:'2dsphere'})
+tourSchema.index({ startLocation: '2dsphere' });
 
 //VIRTUALS
 //Add virtual Field
@@ -136,10 +136,5 @@ tourSchema.pre(/^find/, function (next) {
   next();
 });
 
-//AGGREGATE MIDDLEWARE
-// tourSchema.pre('aggregate', function (next) {
-//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-//   next();
-// });
 
 module.exports = mongoose.model('Tour', tourSchema);

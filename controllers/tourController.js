@@ -1,6 +1,6 @@
 const multer = require('multer');
 const sharp = require('sharp');
-
+const Booking = require('../models/bookingModel');
 const Tour = require('../models/tourModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
@@ -21,9 +21,8 @@ exports.uploadTourPhotos = multer({
 ]);
 
 exports.processTourPhotos = catchAsync(async (req, res, next) => {
-  
   if (!req.files || !req.files.imageCover || !req.files.images) return next();
-  
+
   //1) process imageCover
   req.body.imageCover = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
   await sharp(req.files.imageCover[0].buffer)
@@ -54,10 +53,125 @@ exports.aliasTopTours = (req, res, next) => {
   next();
 };
 
-exports.getAllTours = factory.getAll(Tour);
+// exports.getAllTours = factory.getAll(Tour);
 exports.createTour = factory.createOne(Tour);
 exports.updateTour = factory.updateOne(Tour);
 exports.deleteTour = factory.deleteOne(Tour);
+
+exports.getAllTours = catchAsync(async (req, res, next) => {
+  let tours = await Tour.find();
+
+  let tourBookingsPerStartDate = await Booking.aggregate([
+    {
+      $group: {
+        _id: {
+          tour: '$tour',
+          startDate: '$startDate',
+        },
+        participants: { $sum: 1 },
+      },
+    },
+  ]);
+
+  tourBookingsPerStartDate = tourBookingsPerStartDate.map((BPSD) => {
+    const { tour, startDate } = BPSD._id;
+    return {
+      tour,
+      startDate,
+      participants: BPSD.participants,
+    };
+  });
+
+  tourBookingsPerStartDate = tourBookingsPerStartDate.reduce(
+    (result, booking) => {
+      let { tour, startDate, participants } = booking;
+
+      if (!result[tour]) {
+        result[tour] = {};
+      }
+     
+      startDate = new Date(startDate).toISOString().slice(0,10)
+      result[tour][startDate] = participants;
+
+      return result;
+    },
+    {}
+  );
+
+  const toursWithBookingDetails = tours.map((tour) => {
+    const tourBookings = tourBookingsPerStartDate[tour._id];
+
+    let bookingsPerStartDate;
+    if (tourBookings) {
+      bookingsPerStartDate = tour.startDates.map((SD) => {
+        SD = new Date(SD).toISOString().slice(0,10)
+        return {
+          startDate: SD,
+          participants: tourBookings[SD] || 0,
+          availableCapacity: tour.maxGroupSize - (tourBookings[SD] || 0),
+        };
+      });
+    } else {
+      bookingsPerStartDate = tour.startDates.map((SD) => {
+        return {
+          startDate: SD,
+          participants: 0,
+          availableCapacity: tour.maxGroupSize,
+        };
+      });
+    }
+
+    return {
+      ...tour.toObject(),
+      bookingsPerStartDate,
+    };
+  });
+
+  res
+    .status(200)
+    .json({
+      status: 'success',
+      result: tourBookingsPerStartDate.length,
+      data: { tours: toursWithBookingDetails },
+    });
+
+  // tours = tours.map((tour) => {
+  //   let tourBookigs =
+  //     bookingsPerStartDate.filter((BPSD) => BPSD.tour === tour._id) || [];
+
+  //   tour.bookingsPerStartDate = tour.startDates.map((SD) => {
+  //     const SDBooking = tourBookigs.find((TB) => TB.startDate === SD);
+  //     return {
+  //       startDate: SD,
+  //       participants: SDBooking ? SDBooking.participants : 0,
+  //       availableCapacity: SDBooking
+  //         ? tour.maxGroupSize - SDBooking.participants
+  //         : tour.maxGroupSize,
+  //     };
+  //   });
+  //   return { ...tour };
+  // });
+
+  // console.log(bookingsPerStartDate);
+
+  //how each bookin look like
+  //  {
+  //   tour:ObjectId(),
+  //   user:ObjectId(),
+  //   startDate:Date,
+  //   price:Number
+  //  }
+
+  //how each tour should look like
+  // {
+  //     _id: 'sddsfsdfsd',
+  //     name: 'forest hicker',
+  //     BookingsPerStartDate: [
+  //       { startDate: 12 - 4 - 2033, participants: 6, availableCapacity: 2 },
+  //     ],
+  //     totalAvailability: 5,
+  //   };
+});
 
 exports.getTour = catchAsync(async (req, res, next) => {
   const slug = req.params.slug;

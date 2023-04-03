@@ -4,8 +4,47 @@ const catchAsync = require('../utils/catchAsync');
 const APIFeatures = require('../utils/apiFeatures');
 const deleteFile = require('../utils/file');
 
+const deleteExistingFiles = async(Model, id)=>{
+ //query the being updated document
+ const beingUpdatedDoc = await Model.findById(id);
+
+ //check for any file and delete them
+ if (beingUpdatedDoc.imageCover) {
+   const filePath = path.join(
+     '/public',
+     'img',
+     'tours',
+     beingUpdatedDoc.imageCover
+   );
+   deleteFile(filePath, (err) => {
+     if (err) return next(new AppError('internal server problem', 500));
+   });
+ }
+ if (beingUpdatedDoc.images) {
+   beingUpdatedDoc.images.forEach((image) => {
+     const filePath = path.join('/public', 'img', 'tours', image);
+     deleteFile(filePath, (err) => {
+       if (err) return next(new AppError('internal server problem', 500));
+     });
+   });
+ }
+ if (beingUpdatedDoc.photo) {
+   const filePath = path.join(
+     '/public',
+     'img',
+     'users',
+     beingUpdatedDoc.photo
+   );
+   deleteFile(filePath, (err) => {
+     if (err) return next(new AppError('internal server problem', 500));
+   });
+ }
+}
+
+
 exports.deleteOne = (Model) => {
   return catchAsync(async (req, res, next) => {
+    await deleteExistingFiles(Model, req.params.id);
     const doc = await Model.findByIdAndDelete(req.params.id);
     if (!doc) return next(new AppError('No document found', 404));
     res.status(204).json({ status: 'success', data: null });
@@ -14,41 +53,11 @@ exports.deleteOne = (Model) => {
 
 exports.updateOne = (Model) => {
   return catchAsync(async (req, res, next) => {
-    //query the being updated document
-    const beingUpdatedDoc = await Model.findById(req.params.id);
+    
+    //Delete existing files first
+    await deleteExistingFiles(Model, req.params.id)
 
-    //check for any file and delete them
-    if (beingUpdatedDoc.imageCover) {
-      const filePath = path.join(
-        '/public',
-        'img',
-        'tours',
-        beingUpdatedDoc.imageCover
-      );
-      deleteFile(filePath, (err) => {
-        if (err) return next(new AppError('internal server problem', 500));
-      });
-    }
-    if (beingUpdatedDoc.images) {
-      beingUpdatedDoc.images.forEach((image) => {
-        const filePath = path.join('/public', 'img', 'tours', image);
-        deleteFile(filePath, (err) => {
-          if (err) return next(new AppError('internal server problem', 500));
-        });
-      });
-    }
-    if (beingUpdatedDoc.photo) {
-      const filePath = path.join(
-        '/public',
-        'img',
-        'users',
-        beingUpdatedDoc.photo
-      );
-      deleteFile(filePath, (err) => {
-        if (err) return next(new AppError('internal server problem', 500));
-      });
-    }
-
+    //Update now
     const doc = await Model.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
       new: true,

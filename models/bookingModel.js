@@ -6,6 +6,10 @@ const bookingSchema = new mongoose.Schema({
         ref:'Tour',
         required:[true,'Booking must has tour']
     },
+    startDate:{
+       type:Date,
+       required:[true,'Booking must has date']
+    },
     user:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'User',
