@@ -1,13 +1,51 @@
+const mongoose = require('mongoose');
 const stripe = require('stripe')(process.env.STRIPE_API_KEY);
 const Tour = require('../models/tourModel');
-const Booking = require('../models/bookingModel')
-const User = require('../models/userModel')
+const Booking = require('../models/bookingModel');
+const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 
 exports.getCheckoutSession = catchAsync(async (req, res, next) => {
+
+  //Check if current user has made any booking,if yes don't allow to book again
+  const currentUser = await Booking.find({user:req.user._id})
+
+  if(currentUser) return next(new AppError('You have already booked this tour', 409))
+  
+  //Caluculate total participants on given tour on given date
+  const totalParticipantsOnDate = await Booking.aggregate([
+    {
+      $match: {
+        $and: [
+          { tour: mongoose.Types.ObjectId(req.params.tourId) },
+          {
+            $expr: {
+              $eq: [{ $toDate: '$startDate' }, new Date(req.params.startDate)],
+            },
+          },
+        ],
+      },
+    },
+    {
+      $count: 'participants',
+    },
+  ]);
+
   //get tour
   const tour = await Tour.findById(req.params.tourId);
+
+  //Check available capacity
+  const availableCapacity =
+    tour.maxGroupSize - (totalParticipantsOnDate[0].participants || 0);
+
+  if (availableCapacity <= 0)
+    return next(
+      new AppError(
+        'Tour is fully booked on this date, try on another date',
+        409
+      )
+    );
 
   //create session
   const session = await stripe.checkout.sessions.create({
@@ -37,11 +75,16 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', data: { session } });
 });
 
-exports.createBooking = catchAsync(async(req,res,next)=>{
-  const {tourId,price,startDate,userId} = req.body
-  const tour = await Tour.findById(tourId)
-  const user = await User.findById(userId)
-  if(!tour || !user) return next(new AppError('bad request, not allowed to perform this action', 400))
-  await Booking.create({tour:tourId,user:userId,startDate,price})
-  res.status(201).json({status:'success', message:'Tour booked successfully'})
-})
+exports.createBooking = catchAsync(async (req, res, next) => {
+  const { tourId, price, startDate, userId } = req.body;
+  const tour = await Tour.findById(tourId);
+  const user = await User.findById(userId);
+  if (!tour || !user)
+    return next(
+      new AppError('bad request, not allowed to perform this action', 400)
+    );
+  await Booking.create({ tour: tourId, user: userId, startDate, price });
+  res
+    .status(201)
+    .json({ status: 'success', message: 'Tour booked successfully' });
+});
