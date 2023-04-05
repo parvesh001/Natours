@@ -59,6 +59,8 @@ exports.updateTour = factory.updateOne(Tour);
 exports.deleteTour = factory.deleteOne(Tour);
 
 exports.getAllTours = catchAsync(async (req, res, next) => {
+
+  //1)Caluculate tours totalBookings irrespective of date, and construct a array of all its participants
   let toursBookingsWithParticipants = await Booking.aggregate([
     {
       $group: {
@@ -69,7 +71,7 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  //reduce data so for usability
+  //2)reduce data for better usability
   toursBookingsWithParticipants = toursBookingsWithParticipants.reduce(
     (acc, curr) => {
       acc[curr._id] = {
@@ -83,6 +85,7 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 
   let tours = await Tour.find();
 
+  //3)map each tour with their booking details
   const toursWithBookingDetails = tours.map((tour) => {
     let tourBookingsDetails = toursBookingsWithParticipants[tour._id];
 
@@ -99,13 +102,13 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
         availableCapacity: tour.maxGroupSize * tour.startDates.length,
       };
     }
-
     return {
       ...tour.toObject(),
       tourBookingsDetails,
     };
   });
 
+  //4)send back response
   res.status(200).json({
     status: 'success',
     result: toursWithBookingDetails.length,
@@ -114,6 +117,7 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 });
 
 exports.getTour = catchAsync(async (req, res, next) => {
+  //1)Check if tour exist or not with given slug
   const slug = req.params.slug;
   let queriedTour = await Tour.findOne({ slug }).populate({
     path: 'reviews',
@@ -123,6 +127,7 @@ exports.getTour = catchAsync(async (req, res, next) => {
     return next(new AppError('No Tour Found With This Name', 404));
   }
 
+  //2)Caluculate tour bookings per its startDate
   let tourBookingsPerStartDate = await Booking.aggregate([
     {
       $match: { tour: { $eq: queriedTour._id } },
@@ -130,7 +135,7 @@ exports.getTour = catchAsync(async (req, res, next) => {
     {
       $group: {
         _id: '$startDate',
-        participants: { $sum: 1 },
+        participants: { $push: '$user' },
       },
     },
   ]);
@@ -139,25 +144,28 @@ exports.getTour = catchAsync(async (req, res, next) => {
     const startDate = TBPSD._id;
     return {
       startDate,
-      participants: TBPSD.participants,
+      participants: [...TBPSD.participants],
     };
   });
 
+  //3) Reduce data for better usability
   tourBookingsPerStartDate = tourBookingsPerStartDate.reduce((acc, curr) => {
     let startDate = new Date(curr.startDate).toISOString().slice(0, 10);
-    acc[startDate] = curr.participants;
+    acc[startDate] = [...curr.participants];
     return acc;
   }, {});
 
+  //4)Map tour with its booking details
   let queriedTourAsObject = { ...queriedTour.toObject() };
   queriedTourAsObject['bookingsPerStartDate'] = queriedTour.startDates.map(
     (SD) => {
       SD = new Date(SD).toISOString().slice(0, 10);
+      const participants = tourBookingsPerStartDate[SD] || []
       return {
         startDate: SD,
-        participants: tourBookingsPerStartDate[SD] || 0,
+        participants: participants,
         availableCapacity:
-          queriedTour.maxGroupSize - (tourBookingsPerStartDate[SD] || 0),
+          queriedTour.maxGroupSize - participants.length,
       };
     }
   );

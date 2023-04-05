@@ -8,12 +8,12 @@ const AppError = require('../utils/appError');
 
 exports.getCheckoutSession = catchAsync(async (req, res, next) => {
 
-  //Check if current user has made any booking,if yes don't allow to book again
-  const currentUser = await Booking.find({user:req.user._id})
+  //1)Check if current user has made any booking for the tour,if yes don't allow to book again
+  const currentUser = await Booking.find({user:req.user._id, tour:req.params.tourId})
 
-  if(currentUser) return next(new AppError('You have already booked this tour', 409))
+  if(currentUser.length) return next(new AppError('You have already booked this tour', 409))
   
-  //Caluculate total participants on given tour on given date
+  //2)Caluculate total participants on given tour on given date, to see availability
   const totalParticipantsOnDate = await Booking.aggregate([
     {
       $match: {
@@ -31,13 +31,15 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
       $count: 'participants',
     },
   ]);
-
-  //get tour
+ 
+  //3)get tour
   const tour = await Tour.findById(req.params.tourId);
 
-  //Check available capacity
-  const availableCapacity =
-    tour.maxGroupSize - (totalParticipantsOnDate[0].participants || 0);
+  //4)Check available capacity, if not not allow to proceed
+  let availableCapacity = tour.maxGroupSize
+  if(totalParticipantsOnDate[0] && totalParticipantsOnDate[0].participants){
+    availableCapacity = availableCapacity - totalParticipantsOnDate[0].participants
+  }
 
   if (availableCapacity <= 0)
     return next(
@@ -47,7 +49,7 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
       )
     );
 
-  //create session
+  //5)All good? create session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'payment',
@@ -71,7 +73,7 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
     ],
   });
 
-  //send back session
+  //6)send back session
   res.status(200).json({ status: 'success', data: { session } });
 });
 

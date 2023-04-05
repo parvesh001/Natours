@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const Tour = require('./tourModel');
+const User = require('./userModel')
 
 const reviewSchema = new mongoose.Schema(
   {
@@ -34,7 +35,7 @@ reviewSchema.index({tour:1, user:1}, {unique:true})
 
 //STATIC METHOD:To caluculate the ratingsAvg of concerned tour
 reviewSchema.statics.caluculateAvgRatings = async function (tourId) {
-  //here this key refers to model/schema not document
+  //here this key refers to Review model/schema not document
   const stats = await this.aggregate([
     {
       $match: { tour: tourId },
@@ -90,5 +91,11 @@ reviewSchema.post(/^findOneAnd/, async function () {
     });
   }
 });
+
+reviewSchema.post('save', async function(doc, next){
+    const user = await User.findById(doc.user, 'name photo')
+    doc.user = user
+    next()
+})
 
 module.exports = mongoose.model('Review', reviewSchema);
