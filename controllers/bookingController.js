@@ -90,3 +90,11 @@ exports.createBooking = catchAsync(async (req, res, next) => {
     .status(201)
     .json({ status: 'success', message: 'Tour booked successfully' });
 });
+
+exports.getMyBookings = catchAsync(async(req,res,next)=>{
+  const currentUserBookings = await Booking.find({user:req.user._id})
+  if(!currentUserBookings.length){
+    return next(new AppError('You have not booked any tour yet!', 404))
+  }
+  res.status(200).json({status:'success', data:{bookings:currentUserBookings}})
+})

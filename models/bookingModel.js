@@ -21,4 +21,13 @@ const bookingSchema = new mongoose.Schema({
     }
 }, {timestamps:true})
 
+bookingSchema.pre('find', function(next){
+    this.populate({path:'tour', select:'-__v'})
+    next()
+})
+bookingSchema.pre('find', function(next){
+    this.select('-__v -createdAt -updatedAt -user')
+    next()
+})
+
 module.exports = mongoose.model('Booking', bookingSchema)

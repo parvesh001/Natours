@@ -1,10 +1,12 @@
 const router = require('express').Router()
 
-const checkoutController = require('../controllers/checkoutController')
+const bookingController = require('../controllers/bookingController')
 const authController = require('../controllers/authController')
 
-router.get('/checkout-session/tour/:tourId/startDate/:startDate', authController.protect, checkoutController.getCheckoutSession)
+router.get('/checkout-session/tour/:tourId/startDate/:startDate', authController.protect, bookingController.getCheckoutSession)
 
-router.post('/create-booking', authController.protect, checkoutController.createBooking)
+router.post('/create-booking', authController.protect, bookingController.createBooking)
+
+router.get('/my-bookings', authController.protect, bookingController.getMyBookings )
 
 module.exports = router
