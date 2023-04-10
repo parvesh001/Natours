@@ -19,6 +19,8 @@ router
     reviewController.createReview
   );
 
+router.get('/my-reviews', reviewController.getMyReviews)
+
 router
   .route('/:id')
   .get(reviewController.getReview)
