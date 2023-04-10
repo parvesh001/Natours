@@ -8,14 +8,7 @@ const catchAsync = require('../utils/catchAsync');
 const User = require('../models/userModel');
 const factory = require('../controllers/handlerFactory');
 const deleteFile = require('../utils/file');
-
-const filterObj = (obj, ...allowedFields) => {
-  let filteredObj = {};
-  for (let key in obj) {
-    if (allowedFields.includes(key)) filteredObj[key] = obj[key];
-  }
-  return filteredObj;
-};
+const filterObject = require('../utils/filterObject')
 
 //As we need to configure image, at this time we do not want to store image in disk
 // const multerStorage = multer.diskStorage({
@@ -73,7 +66,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     );
   }
   //2)Filter out not-allowed fileds
-  const filteredObj = filterObj(req.body, 'name', 'email');
+  const filteredObj = filterObject(req.body, 'name', 'email');
 
   //3)Check if their is image file, if yes attach to obj and delete existing file if it is !== default.jpg
   if (req.file) {
@@ -107,12 +100,7 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 });
 
 //donot use this route to create user go to :/signup
-exports.createUser = (req, res) => {
-  res
-    .status(500)
-    .json({ status: 'error', message: 'This route is not defined!' });
-};
-
+exports.createUser = factory.createOne(User)
 exports.getAllUsers = factory.getAll(User);
 exports.getUser = factory.getOne(User);
 exports.updateUser = factory.updateOne(User);

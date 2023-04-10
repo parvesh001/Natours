@@ -1,9 +1,14 @@
 const crypto = require('crypto');
+
+const jwt = require('jsonwebtoken');
+
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
-const jwt = require('jsonwebtoken');
+const filterObject = require('../utils/filterObject')
+
+
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET_KEY, {
@@ -27,8 +32,10 @@ const createSendToken = (res, user, statusCode) => {
 
 exports.signup = catchAsync(async (req, res, next) => {
   //Validation logic is running in model,here we only need to focus on response
+  //Some requering filtering of users inputs
+  const filteredObj = filterObject(req.body, 'name', 'email', 'password', 'passwordConfirm')
   //Create User
-  const newUser = await User.create(req.body);
+  const newUser = await User.create(filteredObj);
   //generate JWT and send back with response
   createSendToken(res, newUser, 201);
 });

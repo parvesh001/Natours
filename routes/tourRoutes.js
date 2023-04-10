@@ -49,7 +49,7 @@ router
     tourController.deleteTour
   );
 
-router.get('/:slug',tourController.getTour)
+router.get('/:slug', tourController.getTour);
 
 // domain/api/v1/tours/2mdsm33/reviews
 router.use('/:tourId/reviews', reviewRouter);

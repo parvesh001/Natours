@@ -28,17 +28,17 @@ const deleteExistingFiles = async(Model, id)=>{
      });
    });
  }
- if (beingUpdatedDoc.photo) {
-   const filePath = path.join(
-     '/public',
-     'img',
-     'users',
-     beingUpdatedDoc.photo
-   );
-   deleteFile(filePath, (err) => {
-     if (err) return next(new AppError('internal server problem', 500));
-   });
- }
+//  if (beingUpdatedDoc.photo && beingUpdatedDoc.photo !== 'default.jpg') {
+//    const filePath = path.join(
+//      '/public',
+//      'img',
+//      'users',
+//      beingUpdatedDoc.photo
+//    );
+//    deleteFile(filePath, (err) => {
+//      if (err) return next(new AppError('internal server problem', 500));
+//    });
+//  }
 }
 
 
