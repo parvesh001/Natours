@@ -5,6 +5,7 @@ const Booking = require('../models/bookingModel');
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const handleFactory = require('../controllers/handlerFactory')
 
 exports.getCheckoutSession = catchAsync(async (req, res, next) => {
 
@@ -98,3 +99,5 @@ exports.getMyBookings = catchAsync(async(req,res,next)=>{
   }
   res.status(200).json({status:'success', data:{bookings:currentUserBookings}})
 })
+
+exports.getBookings = handleFactory.getAll(Booking)

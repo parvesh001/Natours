@@ -7,8 +7,8 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Name is required'],
-    maxLength: [20, 'Tour name must contains less or equal to 20 characters'],
-    minLength: [2, 'Tour name must contains minimum 2 characters'],
+    maxLength: [20, 'User name must contains less or equal to 20 characters'],
+    minLength: [2, 'User name must contains minimum 2 characters'],
   },
   email: {
     type: String,
@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   },
   role:{
     type:String,
-    enum:['user', 'admin', 'lead-guide', 'guide', 'executive', 'ceo', 'other', 'random'],
+    enum:['user', 'admin', 'lead-guide', 'guide'],
     default:'user' 
   },
   photo:{

@@ -94,6 +94,8 @@ exports.getAll = (Model) => {
     let filter = {};
     if (req.params.tourId) filter = { tour: req.params.tourId };
 
+    const totalDocs = await Model.countDocuments()
+
     const apiFeatures = new APIFeatures(Model.find(filter), req.query)
       .filter()
       .sort()
@@ -105,7 +107,7 @@ exports.getAll = (Model) => {
     res.status(200).json({
       status: 'success',
       result: docsArray.length,
-      data: { data: docsArray },
+      data: { data: docsArray, docsAvailabe:totalDocs },
     });
   });
 };

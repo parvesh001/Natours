@@ -3,10 +3,20 @@ const router = require('express').Router()
 const bookingController = require('../controllers/bookingController')
 const authController = require('../controllers/authController')
 
-router.get('/checkout-session/tour/:tourId/startDate/:startDate', authController.protect, bookingController.getCheckoutSession)
+router.use(authController.protect)
 
-router.post('/create-booking', authController.protect, bookingController.createBooking)
 
-router.get('/my-bookings', authController.protect, bookingController.getMyBookings )
+router.get('/checkout-session/tour/:tourId/startDate/:startDate', bookingController.getCheckoutSession)
+
+router.post('/create-booking', bookingController.createBooking)
+
+router.get('/my-bookings', bookingController.getMyBookings )
+
+
+router.use(authController.restrictTo('admin'))
+
+
+router.route('/').get(bookingController.getBookings).post()
+
 
 module.exports = router

@@ -8,7 +8,7 @@ const catchAsync = require('../utils/catchAsync');
 const User = require('../models/userModel');
 const factory = require('../controllers/handlerFactory');
 const deleteFile = require('../utils/file');
-const filterObject = require('../utils/filterObject')
+const filterObject = require('../utils/filterObject');
 
 //As we need to configure image, at this time we do not want to store image in disk
 // const multerStorage = multer.diskStorage({
@@ -38,7 +38,7 @@ exports.uploadUserPhoto = multer({
   fileFilter: multerFilter,
 }).single('photo');
 
-exports.processUserPhoto = catchAsync(async(req, res, next) => {
+exports.processUserPhoto = catchAsync(async (req, res, next) => {
   if (!req.file) return next();
 
   req.file.filename = `user-${req.user._id}-${Date.now()}.jpeg`;
@@ -100,8 +100,24 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 });
 
 //donot use this route to create user go to :/signup
-exports.createUser = factory.createOne(User)
+exports.createUser = factory.createOne(User);
 exports.getAllUsers = factory.getAll(User);
 exports.getUser = factory.getOne(User);
-exports.updateUser = factory.updateOne(User);
-exports.deleteUser = factory.deleteOne(User);
+
+exports.updateUser = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id)
+  if(!user)return next(new AppError('No user with this id', 400))
+  const filteredObj = filterObject(req.body, 'name', 'email', 'role');
+  const updatedUser = await User.findByIdAndUpdate(req.params.id, filteredObj, {
+    runValidators: true,
+    new: true,
+  });
+  res.status(200).json({status:'success', data:{data:updatedUser}})
+});
+
+exports.deleteUser = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id)
+  if(!user)return next(new AppError('No user with this id', 400))
+  await User.findByIdAndUpdate(req.params.id, {active:false})
+  res.status(204).json({ status: 'success', data: null });
+});
