@@ -78,7 +78,7 @@ exports.getCheckoutSession = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: 'success', data: { session } });
 });
 
-exports.createBooking = catchAsync(async (req, res, next) => {
+exports.bookTour = catchAsync(async (req, res, next) => {
   const { tourId, price, startDate, userId } = req.body;
   const tour = await Tour.findById(tourId);
   const user = await User.findById(userId);
@@ -100,4 +100,8 @@ exports.getMyBookings = catchAsync(async(req,res,next)=>{
   res.status(200).json({status:'success', data:{bookings:currentUserBookings}})
 })
 
+
+exports.createBooking = handleFactory.createOne(Booking)
 exports.getBookings = handleFactory.getAll(Booking)
+exports.updateBooking = handleFactory.updateOne(Booking)
+exports.deleteBooking = handleFactory.deleteOne(Booking)

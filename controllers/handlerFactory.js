@@ -94,13 +94,17 @@ exports.getAll = (Model) => {
     let filter = {};
     if (req.params.tourId) filter = { tour: req.params.tourId };
 
-    const totalDocs = await Model.countDocuments()
 
+    const totalDocs = await Model.countDocuments(APIFeatures.transformedQueryObj(req.query))
+    
+    console.log(APIFeatures.transformedQueryObj(req.query))
     const apiFeatures = new APIFeatures(Model.find(filter), req.query)
       .filter()
       .sort()
       .limitFields()
       .pagination();
+
+    
 
     //Finally Getting Docs
     const docsArray = await apiFeatures.query;

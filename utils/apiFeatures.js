@@ -4,21 +4,23 @@ class APIFeatures {
     this.queryObj = queryObj;
   }
 
-  filter() {
+  static transformedQueryObj(queryObject) {
     //exclude some other features related queries
-    const queryObj = { ...this.queryObj };
+    const queryObj = { ...queryObject };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
-    
+
     //construct query in the way mongoose understand
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    console.log(queryStr)
-    //filter now
-    this.query = this.query.find(JSON.parse(queryStr));
-    return this;
+    return JSON.parse(queryStr)
   }
 
+  filter() {
+    //filter now
+    this.query = this.query.find(APIFeatures.transformedQueryObj(this.queryObj));
+    return this;
+  }
   // User.find({
   //   $or: [
   //     { role: 'guide' },
@@ -47,7 +49,7 @@ class APIFeatures {
   }
 
   pagination() {
-    const page = this.queryObj.page * 1|| 1;
+    const page = this.queryObj.page * 1 || 1;
     const limit = this.queryObj.limit * 1 || 100;
     const skip = (page - 1) * limit;
     this.query = this.query.skip(skip).limit(limit);

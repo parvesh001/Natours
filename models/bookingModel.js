@@ -21,11 +21,11 @@ const bookingSchema = new mongoose.Schema({
     }
 }, {timestamps:true})
 
-bookingSchema.pre('find', function(next){
+bookingSchema.pre(/^find/, function(next){
     this.populate({path:'tour', select:'-__v'}).populate({path:'user', select:'-__v'})
     next()
 })
-bookingSchema.pre('find', function(next){
+bookingSchema.pre(/^find/, function(next){
     this.select('-__v')
     next()
 })
