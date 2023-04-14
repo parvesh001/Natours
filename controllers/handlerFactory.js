@@ -97,7 +97,6 @@ exports.getAll = (Model) => {
 
     const totalDocs = await Model.countDocuments(APIFeatures.transformedQueryObj(req.query))
     
-    console.log(APIFeatures.transformedQueryObj(req.query))
     const apiFeatures = new APIFeatures(Model.find(filter), req.query)
       .filter()
       .sort()

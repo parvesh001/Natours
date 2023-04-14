@@ -10,6 +10,7 @@ const xss = require('xss-clean')
 const hpp = require('hpp');
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
+const compression = require('compression')
 // const csrf = require('csurf')
 
 const globalErrorHandler = require('./controllers/errorController');
@@ -73,6 +74,8 @@ app.use(hpp({
     'difficulty'
   ]
 }))
+
+app.use(compression())
 
 //ROUTES
 app.use('/api/v1/tours', tourRouter);
