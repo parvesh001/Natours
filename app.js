@@ -35,6 +35,9 @@ if (process.env.NODE_ENV === 'development') {
 //Cors headers
 app.use(cors())
 
+//browser sends this request when there is non-simpple requsts:PUT,PATCH,DELETE,CONTAIN COOKIE
+app.options('*', cors())
+
 // // add the csrf middleware
 // app.use(csrfProtection);
 
