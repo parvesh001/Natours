@@ -121,7 +121,7 @@ exports.bookMyTour = async (req, res, next) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
   if (event.type === 'checkout.session.completed')
-    await saveBooking(event.data.object);
+   saveBooking(event.data.object);
 
   res.status(200).json({ received: true });
 };
