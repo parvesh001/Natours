@@ -10,7 +10,6 @@ router.get(
   bookingController.getCheckoutSession
 );
 
-router.post('/book-tour', bookingController.bookTour);
 
 router.get('/my-bookings', bookingController.getMyBookings);
 

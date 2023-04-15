@@ -1,30 +1,30 @@
-const path = require('path')
+const path = require('path');
 
 //Required Packages
 const express = require('express');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit')
-const helmet = require('helmet')
-const mongoSanitize = require('express-mongo-sanitize')
-const xss = require('xss-clean')
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
 const hpp = require('hpp');
-const cors = require('cors')
-const cookieParser = require('cookie-parser')
-const compression = require('compression')
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const compression = require('compression');
 // const csrf = require('csurf')
 
+const bookingController = require('./controllers/bookingController');
 const globalErrorHandler = require('./controllers/errorController');
 const AppError = require('./utils/appError');
 
 //Required Routes
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
-const reviewRouter = require('./routes/reviewRoutes')
-const bookingRouter = require('./routes/bookingRoutes')
+const reviewRouter = require('./routes/reviewRoutes');
+const bookingRouter = require('./routes/bookingRoutes');
 
 const app = express();
 // const csrfProtection = csrf({ cookie: true });
-
 
 //GLOBAL MIDDLEWARES:run on each request
 //Log requests during development mode
@@ -33,58 +33,67 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 //Cors headers
-app.use(cors())
+app.use(cors());
 
 //browser sends this request when there is non-simpple requsts:PUT,PATCH,DELETE,CONTAIN COOKIE
-app.options('*', cors())
+app.options('*', cors());
 
 // // add the csrf middleware
 // app.use(csrfProtection);
+
+//HANDLING STRIPE WEBHOOK "CHECKOUT.SESSION.COMPLETED" EVENT
+app.post(
+  '/webhook-checkout-completed',
+  express.raw({ type: 'application/json' }),
+  bookingController.bookMyTour
+);
 
 //Parse incoming json data
 app.use(express.json());
 
 //Parse cookie
-app.use(cookieParser())
+app.use(cookieParser());
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(`${__dirname}`, 'public')));
 
 //Set security http headers
-app.use(helmet())
+app.use(helmet());
 
 //Limit incoming requests in between an hour
 const limiter = rateLimit({
-  max:1000000000,
-  windowMs:60 * 60 * 1000,
-  message:'To many request from this IP, please try again after an hour'
-})
-app.use('/api', limiter)
+  max: 1000000000,
+  windowMs: 60 * 60 * 1000,
+  message: 'To many request from this IP, please try again after an hour',
+});
+app.use('/api', limiter);
 
 //Senitize Data:NOSQL Querry Injuction
-app.use(mongoSanitize())
+app.use(mongoSanitize());
 
 //Senitize Data: XSS
-app.use(xss())
+app.use(xss());
 
 //Prevent against parameter pollution
-app.use(hpp({
-  whitelist:[
-    'duration',
-    'maxGroupSize',
-    'ratingsAverage',
-    'price',
-    'difficulty'
-  ]
-}))
+app.use(
+  hpp({
+    whitelist: [
+      'duration',
+      'maxGroupSize',
+      'ratingsAverage',
+      'price',
+      'difficulty',
+    ],
+  })
+);
 
-app.use(compression())
+app.use(compression());
 
 //ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
-app.use('/api/v1/reviews', reviewRouter )
-app.use('/api/v1/bookings', bookingRouter)
+app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 //404 response:When no route match
 app.all('*', (req, res, next) => {
