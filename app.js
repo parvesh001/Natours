@@ -54,42 +54,6 @@ app.use(express.json());
 //Parse cookie
 app.use(cookieParser());
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(`${__dirname}`, 'public')));
-
-//Set security http headers
-app.use(helmet());
-
-//Limit incoming requests in between an hour
-const limiter = rateLimit({
-  max: 1000000000,
-  windowMs: 60 * 60 * 1000,
-  message: 'To many request from this IP, please try again after an hour',
-});
-app.use('/api', limiter);
-
-//Senitize Data:NOSQL Querry Injuction
-app.use(mongoSanitize());
-
-//Senitize Data: XSS
-app.use(xss());
-
-//Prevent against parameter pollution
-app.use(
-  hpp({
-    whitelist: [
-      'duration',
-      'maxGroupSize',
-      'ratingsAverage',
-      'price',
-      'difficulty',
-    ],
-  })
-);
-
-app.use(compression());
-
-
 //Video Streaming
 app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
   //Check if there is range
@@ -129,6 +93,44 @@ app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
   //Pipe stream to writable stream
   readStream.pipe(res)
 })
+
+// Serve static files from the "public" directory
+app.use(express.static(path.join(`${__dirname}`, 'public')));
+
+//Set security http headers
+app.use(helmet());
+
+//Limit incoming requests in between an hour
+const limiter = rateLimit({
+  max: 1000000000,
+  windowMs: 60 * 60 * 1000,
+  message: 'To many request from this IP, please try again after an hour',
+});
+app.use('/api', limiter);
+
+//Senitize Data:NOSQL Querry Injuction
+app.use(mongoSanitize());
+
+//Senitize Data: XSS
+app.use(xss());
+
+//Prevent against parameter pollution
+app.use(
+  hpp({
+    whitelist: [
+      'duration',
+      'maxGroupSize',
+      'ratingsAverage',
+      'price',
+      'difficulty',
+    ],
+  })
+);
+
+app.use(compression());
+
+
+
 
 //ROUTES
 app.use('/api/v1/tours', tourRouter);
