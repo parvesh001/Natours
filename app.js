@@ -62,7 +62,7 @@ app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
     return res.status(500).send('Range is required')
   }
 
-  const filePath = __dirname + '/public/videos/tourista-tours.mp4';
+  const filePath = path.join(__dirname, 'public','videos','tourista-tours.mp4');
   const fileSize = fs.statSync(filePath).size;
 
   //Decide max chunk size you want to send
