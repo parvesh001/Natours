@@ -95,6 +95,48 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/bookings', bookingRouter);
 
+
+//Video Streaming
+app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
+  //Check if there is range
+  const range = req.headers.range;
+  if(!range){
+    return res.status(500).send('Range is required')
+  }
+
+  const filePath = __dirname + '/public/videos/tourista-tours.mp4';
+  const fileSize = fs.statSync(filePath).size;
+
+  //Decide max chunk size you want to send
+  const CHUNK_SIZE = 10**6; //1MB
+
+  //Parse start range, range will be in "bytes=233243-" form
+  const start = parseInt(range.replace(/\D/g, ''))//remove non digit nums from range
+
+  //Determine end byte, Math.min to not cross file actual size
+  const end = Math.min(start + CHUNK_SIZE,fileSize - 1)
+
+  //Content legth = end - start
+  const contentLength = end - start + 1;
+
+  //Prepare important headers
+  const headers = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length':contentLength,
+      'Content-Type': 'video/mp4'
+  }
+  //Set response headers with status code 206 that says partial content
+  res.writeHead(206, headers)
+
+  //Create a stream
+  const readStream = fs.createReadStream(filePath, {start, end})
+
+  //Pipe stream to writable stream
+  readStream.pipe(res)
+})
+
+
 //404 response:When no route match
 app.all('*', (req, res, next) => {
   next(new AppError(`can't find ${req.originalUrl} route!`, 404));
