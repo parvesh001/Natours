@@ -89,12 +89,6 @@ app.use(
 
 app.use(compression());
 
-//ROUTES
-app.use('/api/v1/tours', tourRouter);
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/reviews', reviewRouter);
-app.use('/api/v1/bookings', bookingRouter);
-
 
 //Video Streaming
 app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
@@ -135,6 +129,12 @@ app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
   //Pipe stream to writable stream
   readStream.pipe(res)
 })
+
+//ROUTES
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
 
 
 //404 response:When no route match
