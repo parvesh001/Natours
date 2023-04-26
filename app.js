@@ -31,7 +31,6 @@ const app = express();
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
-
 //Cors headers
 app.use(cors());
 
@@ -55,7 +54,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 //Set security http headers
-app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 
 //Limit incoming requests in between an hour
 const limiter = rateLimit({
@@ -86,6 +85,16 @@ app.use(
 
 app.use(compression());
 
+
+// Serve static files from the "public" directory
+app.use(express.static(path.join(`${__dirname}`, 'public')));
+
+//ROUTES
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/bookings', bookingRouter);
+
 //Video Streaming
 app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
   //Check if there is range
@@ -112,10 +121,11 @@ app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
 
   //Prepare important headers
   const headers = {
+      'Cross-Origin-Resource-Policy': 'cross-origin',
       'Content-Range': `bytes ${start}-${end}/${fileSize}`,
       'Accept-Ranges': 'bytes',
       'Content-Length':contentLength,
-      'Content-Type': 'video/mp4'
+      'Content-Type': 'video/mp4',
   }
   //Set response headers with status code 206 that says partial content
   res.writeHead(206, headers)
@@ -126,15 +136,6 @@ app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
   //Pipe stream to writable stream
   readStream.pipe(res)
 })
-
-// Serve static files from the "public" directory
-app.use(express.static(path.join(`${__dirname}`, 'public')));
-
-//ROUTES
-app.use('/api/v1/tours', tourRouter);
-app.use('/api/v1/users', userRouter);
-app.use('/api/v1/reviews', reviewRouter);
-app.use('/api/v1/bookings', bookingRouter);
 
 //404 response:When no route match
 app.all('*', (req, res, next) => {
