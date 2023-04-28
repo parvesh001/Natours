@@ -95,7 +95,7 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/bookings', bookingRouter);
 
-//Video Streaming
+// Video Streaming
 app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
   //Check if there is range
   const range = req.headers.range;
@@ -103,7 +103,7 @@ app.get('/api/v1/tourista-tours-video', (req,res,next)=>{
     return res.status(500).send('Range is required')
   }
   
-  const filePath = path.join(__dirname, 'public','videos','tourista-tours-2.mp4');
+  const filePath = path.join(__dirname, 'public','videos','tourista-tours01.mp4');
  
   const fileSize = fs.statSync(filePath).size;
 
