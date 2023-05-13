@@ -1,28 +1,29 @@
-const startDates = [
-  '2021-04-25T09:00:00.000Z',
-  '2021-07-20T09:00:00.000Z',
-  '2021-10-05T09:00:00.000Z',
-];
+//provides a event emitter class that let us create, emit, listen, and remove events
+const fs = require('fs')
 
-const BookingsPerStartDate = [
-  {
-    startDate: '2021-04-25T09:00:00.000Z',
-    participants: [1, 2, 3, 4, 5],
-    availabeCapacity: 5,
-  },
-  {
-    startDate: '2021-07-20T09:00:00.000Z',
-    participants: [1, 2, 3],
-    availabeCapacity: 2,
-  },
-  {
-    startDate: '2021-10-05T09:00:00.000Z',
-    participants: [],
-    availabeCapacity: 0,
-  },
-];
+const EventEmitter = require('events')
 
-BookingsPerStartDate.forEach(BPST=>{
-  BPST.availabeCapacity === 0 ? console.log('full'): console.log(BPST.availabeCapacity)
+const http = require('http')
+
+class Server extends EventEmitter(){
+     constructor(){
+      super();
+      this.server = http.createServer(this.handleRequest.bind(this))
+     }
+     
+     handleRequest(req,res){
+        this.emit('request', req,res)
+     }
+     listen(port){
+      this.server.listen(port)
+     }
+}
+
+const server = new Server()
+
+server.on('request', (req,res)=>{
+  console.log('request came')
 })
 
+server.listen(8080)
+s
