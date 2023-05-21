@@ -1,6 +1,7 @@
 # WELCOME TO TOURISTA TOURS WEB APP SERVICE
 Wanna see complete app? here is link: https://tourista-tours.web.app
-
+## Brief 
+Tourista Tours is a travel web app where you can book a destination for your holiday and enjoy it. It is just two click process, you just nedd to select a tour and make payment, and yehhh!🤩🤩 your tour is booked on your prefered date.
 ## Technologies
 - Node
 - Express
