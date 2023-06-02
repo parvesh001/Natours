@@ -97,7 +97,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     return next(new AppError('Could not find token, please login again', 401));
   }
 
-  //2)Check if token is valid:varify token
+  //2)Check if token is valid:check expiration time and signature
   const decodedToken = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
   //3)Check if the user still exist
